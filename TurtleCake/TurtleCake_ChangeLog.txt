@@ -1,0 +1,20 @@
+==Version 1.1==
+--Fixed--
+- Solved error when pulling from chest where no space in chest leads to picking up item (as intended) leading to empty space causing getItemDetail() to return nil
+- Solved infinite loop of lacking ingredients, knowningly lacking them, printing so, continues anyway.
+- Optimized order of main loop to reduce unnecessary cleaning of turtle inventory while lacking ingredients
+- Added check for if a cake is in the chest, places it above turtle and skips crafting process.
+
+
+--Known issues--
+- If there is a server side error, not allowing any block to be placed (block sync issue), it will craft a cake, fail to place it, return it to the chest and continue. I have since not had this issue repeat itself. I can no longer re-create the issue, but let it be known that if it does occur, it is not the fault of the script, and your input chest will contain every cake the turtle can make so you're not losing anything other than some time re-syncing the server. Usually resolved by breaking a block next to where the cake is meant to be.
+- Also likely a sync issue, but only once did it not detect the cake above it, and it continued. Upon placing a cake on it again (with a mod allowing a second layer to be added) it deteced it that time. Could not recreate.
+
+
+--TODO--
+- Fix bug after ~32 crafts, slot gets full and can't dump nor craft (Reported by user, but can't recreate so far.)
+- Fix "junk" or temporary item clearing from launching refuse into lower orbit.
+
+
+==Version 1.0==
+Initial upload, added "TurtleCake.lua".

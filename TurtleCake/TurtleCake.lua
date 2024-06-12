@@ -1,5 +1,8 @@
--- REQUIRES FARMER'S DELIGHT
--- SETUP: Chest in front (input), Chest under (gets empty bottles), Empty space above (for cake)
+-- Author: KingpneguinL
+-- Version: 1.1
+-- Purpose: Making a cake from items in a chest in front, placing bottles in a chest underneath, placing a cake in-world above turtle.
+-- REQUIRES: FARMER'S DELIGHT
+
 
 -- PERIPHERALS --
 CFront = peripheral.wrap("front") -- Chest in front
@@ -11,11 +14,20 @@ itmWheat = "minecraft:wheat"
 itmSugar = "minecraft:sugar"
 itmEgg = "minecraft:egg"
 itmBottle = "minecraft:glass_bottle"
+itmCake = "minecraft:cake"
 
 -- COUNTING (for quality assurance) --
 intCakeCount = 0
 
 -- Functions --
+-- Clear and reset terminal screen
+function ResetScreen()
+	term.clear()
+	term.setCursorPos(1,1)
+end
+
+
+
 -- Clear turtle inventory
 function TurtleClear()
 	-- Loop attempt to clear every slot
@@ -50,6 +62,7 @@ function ChestCheck()
 	local cntWheat = 0
 	local cntEgg = 0
 	local blnEnable = true
+	local blnCake = false
 	local aEmpty = {};
 	
 	turtle.select(1)
@@ -65,37 +78,49 @@ function ChestCheck()
 				cntSugar = cntSugar + Count
 			elseif Item == itmWheat then
 				cntWheat = cntWheat + Count
+			elseif Item == itmCake then
+				blnCake = true
+				break -- cake found, skip for loop
 			elseif Item == nil and i > 4 then	-- disqualify slots 1-4 from empty list
 				table.insert(aEmpty, i)
 			end
 		end
 	end
 	
-	-- Check egg
-	if cntEgg < 0 then
-		print("Not enough eggs")
-		blnEnable = false
+	if blnCake == false then
+		-- Check egg
+		if cntEgg < 0 then
+			ResetScreen()
+			print("Not enough eggs")
+			blnEnable = false
+		end
+		
+		-- Check milk
+		if cntMilk < 3 then
+			ResetScreen()
+			print("Not enough milk")
+			blnEnable = false
+		end
+		
+		-- Check sugar
+		if cntSugar < 2 then
+			ResetScreen()
+			print("Not enough sugar")
+			blnEnable = false
+		end
+		
+		-- Check wheat
+		if cntWheat < 3 then
+			ResetScreen()
+			print("Not enough wheat")
+			blnEnable = false
+		end
+	else
+		print("Cake found! Skipping process")
+		blnEnable = true
 	end
 	
-	-- Check milk
-	if cntMilk < 3 then
-		print("Not enough milk")
-		blnEnable = false
-	end
-	
-	-- Check sugar
-	if cntSugar < 2 then
-		print("Not enough sugar")
-		blnEnable = false
-	end
-	
-	-- Check wheat
-	if cntWheat < 3 then
-		print("Not enough wheat")
-		blnEnable = false
-	end
-	
-	return blnChest, aEmpty
+	return blnCake, blnEnable, aEmpty
 end
 
 
@@ -173,36 +198,68 @@ end
 
 
 -- Pulls items from front chest to turtle (1st slot 'input'), divies up for recipe, puts excess on right most slots to be returned
-function PullChest()
+function PullChest(blnCake)
 	for i = 1,4 do
+	turtle.select(1)
 		turtle.suck() -- Pick item from 1st available slot in chest
-		local Item = turtle.getItemDetail(1).name
-		local Count = turtle.getItemDetail(1).count
-		if Item == itmEgg and Count >= 1 then
-			turtle.transferTo(10, 1)
-			-- move excess aside
-			turtle.transferTo(4,64)
-		elseif Item == itmMilk and Count >= 3 then
-			turtle.transferTo(5,1)
-			turtle.transferTo(6,1)
-			turtle.transferTo(7,1)
-			-- move excess aside
-			turtle.transferTo(8,64)
-		elseif Item == itmSugar and Count >= 2 then
-			turtle.transferTo(9, 1)
-			turtle.transferTo(11, 1)
-			-- move excess aside
-			turtle.transferTo(12,64)
-		elseif Item == itmWheat and Count >= 3 then
-			turtle.transferTo(13,1)
-			turtle.transferTo(14,1)
-			turtle.transferTo(15,1)
-			-- move excess aside
-			turtle.transferTo(16,64)
+		if turtle.getItemDetail() ~= false then
+			local Item = turtle.getItemDetail(1).name
+			local Count = turtle.getItemDetail(1).count
+			if Item == itmEgg and Count >= 1 then
+				turtle.transferTo(10, 1)
+				-- move excess aside
+				turtle.transferTo(4,64)
+			elseif Item == itmMilk and Count >= 3 then
+				turtle.transferTo(5,1)
+				turtle.transferTo(6,1)
+				turtle.transferTo(7,1)
+				-- move excess aside
+				turtle.transferTo(8,64)
+			elseif Item == itmSugar and Count >= 2 then
+				turtle.transferTo(9, 1)
+				turtle.transferTo(11, 1)
+				-- move excess aside
+				turtle.transferTo(12,64)
+			elseif Item == itmWheat and Count >= 3 then
+				turtle.transferTo(13,1)
+				turtle.transferTo(14,1)
+				turtle.transferTo(15,1)
+				-- move excess aside
+				turtle.transferTo(16,64)
+			else
+				-- Junk, throw out.
+				turtle.dropUp()
+			end
 		end
 	end
 end
 
+
+
+-- If cake detected in input chest, use this to take it from front chest
+function TakeCake()
+	-- Free chest slot 1 for cake)
+	turtle.select(2)
+	turtle.suck()
+	
+	-- Find cake
+	for i = 1, CFront.size() do
+		if CFront.getItemDetail(i) ~= nil then	-- skip if nil or it will break the program
+			local ID = CFront.getItemDetail(i).name
+			if ID == itmCake then
+				CFront.pushItems("front",i,1,1)	-- Any eggs to slot 1
+			end
+		end
+	end
+	
+	-- Obtain cake
+	turtle.select(3)
+	turtle.suck()
+	
+	-- Return held ITEM
+	turtle.select(2)
+	turtle.drop()
+end
 
 
 -- Clean Turtle excess for crafting
@@ -223,7 +280,15 @@ end
 -- Craft the cake
 function Bake()
 	turtle.select(3)	-- Turtle's output slot
-	turtle.craft(1)		-- Cakes do not stack, make 1
+	local blnCrafted = turtle.craft(1)		-- Cakes do not stack, make 1
+	if blnCrafted == false then
+		print("Crafting failed... Clearing.")
+		TurtleClear()
+		print("I'm sorry :< I'll try again...")
+		Recover()
+		MainLoop()	-- Start over, hopefully it gets corrected
+	end
+	
 end
 
 
@@ -242,62 +307,75 @@ function PlaceCake()
 end
 
 
+
 function MainLoop()
 	local blnReady = false -- boolean enough chest ingredients
 	local aEmpty = {} -- Empty chest spaces for sorting
-	term.clear()
-	term.setCursorPos(1,1)
 	
+	ResetScreen()
+	print("Cakes since wake: "..intCakeCount)
 	if turtle.detectUp() == false then
 		--
-		print("Clearing Turtle...")
-		TurtleClear()
-		--
-		print("Waiting for ingredients...")
+		print("Checking for ingredients...")
 		while blnReady == false do
-			blnReady, aEmpty  = ChestCheck()
+			blnCake, blnReady, aEmpty  = ChestCheck()
 			if blnReady == false then
+				print("Waiting for ingredients...")
 				os.sleep(10) -- Wait 10 seconds and check again
+				MainLoop()
 			end
 		end
 		--
-		print("Clearing first 4 slots...")
-		blnOverflow = ClearFirst4(aEmpty)
-		--
-		print("Sorting chest...")
-		SortChest(blnOverflow)
-		--
-		print("Pulling from Chest to Turtle...")
-		PullChest()
-		--
-		print("Preparing to cook...")
-		PrepCraft()
-		--
-		print("Cooking...")
-		Bake()
-		--
-		print("Cleaning any tossed items...")
-		Recover()
+		if blnCake == false then
+			--
+			print("Clearing Turtle...")
+			TurtleClear()
+			--
+			print("Clearing first 4 slots...")
+			blnOverflow = ClearFirst4(aEmpty)
+			--
+			print("Sorting chest...")
+			SortChest(blnOverflow)
+			--
+			print("Pulling from Chest to Turtle...")
+			PullChest()
+			--
+			print("Preparing to cook...")
+			PrepCraft()
+			--
+			print("Cooking...")
+			Bake()
+			--
+			print("Cleaning any tossed items...")
+			Recover()
+		else
+			-- Take cake from chest
+			TakeCake()
+		end
 		--
 		print("Placing cake...")
 		PlaceCake()
 		print("Cake is served!")
 		
-		-- Cleanup an count
+		-- Cleanup and count
 		TurtleClear()
 		intCakeCount = intCakeCount +  1
 		print("Cakes since wake: "..intCakeCount)
+		os.sleep(3)
 	else
 		print("Cake present, wait 10 sec")
 		os.sleep(10)	-- Cake present, sleep for 10 seconds
-		print("Cakes since wake: "..intCakeCount)
 	end
 end
 
 
 
 -- RUNTIME --
+ResetScreen()
+print("Program init, please hold...")
+TurtleClear() -- Initial clearing of turtle inventory
 while true do
+	ResetScreen()
 	MainLoop()
 end
 
