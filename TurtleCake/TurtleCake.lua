@@ -1,5 +1,5 @@
 -- Author: KingpneguinL
--- Version: 1.1.1
+-- Version: 1.2
 -- Purpose: Making a cake from items in a chest in front, placing bottles in a chest underneath, placing a cake in-world above turtle.
 -- REQUIRES: FARMER'S DELIGHT
 
@@ -32,8 +32,8 @@ end
 function TurtleClear()
 	-- Loop attempt to clear every slot
 	for i = 1, 16 do
-		turtle.select(i)
 		if turtle.getItemDetail(i) ~= nil then	-- If I didn't check prior, a empty slot would error out
+			turtle.select(i)
 			local ID = turtle.getItemDetail(i).name
 			if ID == itmBottle or ID == itmBucket then
 				turtle.dropDown()
@@ -49,15 +49,47 @@ function TurtleClear()
 		if turtle.getItemDetail() ~= nil then
 			print("Can't clear inventory, please remove manually.")
 			os.pullEvent("turtle_inventory")
-			
+			TurtleClear()
 		end
 	end
 end
 
 
 
+function ScanChest(intStart,intEnd)
+	-- Split the contents into 2 arrays because multi-dimensional arrays are complicated...
+	local aContentsItem ={};
+	local aContentsCount = {};
+	for i = intStart, intEnd do
+		if CFront.getItemDetail(i) ~= nil then
+			table.insert(aContentsItem,CFront.getItemDetail(i).name)
+			table.insert(aContentsCount,CFront.getItemDetail(i).count)
+		else
+			table.insert(aContentsItem,"Empty")
+			table.insert(aContentsCount,0)
+		end
+	end
+	
+	return aContentsItem, aContentsCount
+end
+
+
+
+function FilteredPickup(i, aItem, aCount)
+	if aItem[i] == itmEgg then
+		turtle.suck(16)	-- Max stack is 16
+	elseif aItem[i] == itmMilk then
+		turtle.suck(16) -- Max stack is 16
+	elseif aItem[i] == itmSugar then
+		turtle.suck(64) -- Max stack is 64
+	elseif aItem[i] == itmWheat then
+		turtle.suck(64) -- Max stack is 64
+	end
+end
+
+
 -- Checks chest for sufficient ingredients
-function ChestCheck()
+function ChestCheck(aItem,aCount)
 	local cntSugar = 0
 	local cntMilk = 0
 	local cntWheat = 0
@@ -67,25 +99,21 @@ function ChestCheck()
 	local aEmpty = {};
 	
 	turtle.select(1)
-	for i = 1, CFront.size() do
-		if CFront.getItemDetail(i) ~= nil then -- If I didn't check prior, a empty slot would error out
-			local Item = CFront.getItemDetail(i).name
-			local Count = CFront.getItemDetail(i).count
-			if Item == itmEgg then
-				cntEgg = cntEgg + Count
-			elseif Item == itmMilk then
-				cntMilk = cntMilk + Count
-			elseif Item == itmSugar then
-				cntSugar = cntSugar + Count
-			elseif Item == itmWheat then
-				cntWheat = cntWheat + Count
-			elseif Item == itmCake then
+	for i = 1, table.maxn(aItem) do
+			if aItem[i] == itmEgg then
+				cntEgg = cntEgg + aCount[i]
+			elseif aItem[i] == itmMilk then
+				cntMilk = cntMilk + aCount[i]
+			elseif aItem[i] == itmSugar then
+				cntSugar = cntSugar + aCount[i]
+			elseif aItem[i] == itmWheat then
+				cntWheat = cntWheat + aCount[i]
+			elseif aItem[i] == itmCake then
 				blnCake = true
 				break -- cake found, skip for loop
-			elseif Item == nil and i > 4 then	-- disqualify slots 1-4 from empty list
+			elseif aItem[i] == "Empty" and i > 4 then	-- disqualify slots 1-4 from empty list
 				table.insert(aEmpty, i)
 			end
-		end
 	end
 	
 	if blnCake == false then
@@ -154,26 +182,25 @@ end
 
 
 -- Moves all required items to first 4 slots of front chest
-function SortChest(blnOverflow)
+function SortChest(blnOverflow,aItem)
 	
 	if blnOverflow == true then
 		turtle.select(2)	-- Turtle's holding slot
 		turtle.suck()	--pick up a slot in chest to free at least 1 for sorting, into the holding slot in turtle
 	end
 	turtle.select(1)
+	
+	local aItem,aCount = ScanChest(1,CFront.size()) -- Poll Front Chest
 	-- Sorts ingredients to first 4 slots, forces max stack if possible
-	for i = 1, CFront.size() do
-		if CFront.getItemDetail(i) ~= nil then	-- skip if nil or it will break the program
-			local ID = CFront.getItemDetail(i).name
-			if ID == itmEgg then
-				CFront.pushItems("front",i,16,1)	-- Any eggs to slot 1
-			elseif ID == itmMilk then
-				CFront.pushItems("front",i,64,2)	-- Any milk to slot 2
-			elseif ID == itmSugar then
-				CFront.pushItems("front",i,64,3)	-- Any sugar to slot 3
-			elseif ID == itmWheat then
-				CFront.pushItems("front",i,64,4)	-- Any wheat to slot 4
-			end
+	for i = 1, table.maxn(aItem) do
+		if aItem[i] == itmEgg then
+			CFront.pushItems("front",i,16,1)	-- Any eggs to slot 1
+		elseif aItem[i] == itmMilk then
+			CFront.pushItems("front",i,16,2)	-- Any milk to slot 2
+		elseif aItem[i] == itmSugar then
+			CFront.pushItems("front",i,64,3)	-- Any sugar to slot 3
+		elseif aItem[i] == itmWheat then
+			CFront.pushItems("front",i,64,4)	-- Any wheat to slot 4
 		end
 	end
 	if blnOverflow == true then
@@ -187,28 +214,33 @@ end
 
 -- Pulls items from front chest to turtle (1st slot 'input'), divies up for recipe, puts excess on right most slots to be returned
 function PullChest(blnCake)
+	-- Poll Front Chest
+	local aItem,aCount = ScanChest(1,4) 
 	for i = 1,4 do
-	turtle.select(1)
-		turtle.suck() -- Pick item from 1st available slot in chest
-		if turtle.getItemDetail() ~= false then
-			local Item = turtle.getItemDetail(1).name
-			local Count = turtle.getItemDetail(1).count
-			if Item == itmEgg and Count >= 1 then
+		-- Select turtle slot 1
+		turtle.select(1)
+		
+		
+		
+		-- Check item stack limit before pull for modpack compatability
+		FilteredPickup(i, aItem, aCount)
+		
+			if aItem[i] == itmEgg and aCount[i] >= 1 then
 				turtle.transferTo(10, 1)
 				-- move excess aside
-				turtle.transferTo(4,64)
-			elseif Item == itmMilk and Count >= 3 then
+				turtle.transferTo(4,16)
+			elseif aItem[i] == itmMilk and aCount[i] >= 3 then
 				turtle.transferTo(5,1)
 				turtle.transferTo(6,1)
 				turtle.transferTo(7,1)
 				-- move excess aside
-				turtle.transferTo(8,64)
-			elseif Item == itmSugar and Count >= 2 then
+				turtle.transferTo(8,16)
+			elseif aItem[i] == itmSugar and aCount[i] >= 2 then
 				turtle.transferTo(9, 1)
 				turtle.transferTo(11, 1)
 				-- move excess aside
 				turtle.transferTo(12,64)
-			elseif Item == itmWheat and Count >= 3 then
+			elseif aItem[i] == itmWheat and aCount[i] >= 3 then
 				turtle.transferTo(13,1)
 				turtle.transferTo(14,1)
 				turtle.transferTo(15,1)
@@ -218,31 +250,31 @@ function PullChest(blnCake)
 				-- Junk, throw out.
 				turtle.dropUp()
 			end
-		end
+
 	end
 end
 
 
 
 -- If cake detected in input chest, use this to take it from front chest
-function TakeCake()
+function TakeCake(aItem,aCount)
+	-- Poll Front Chest
+	--local aItem,aCount = ScanChest(1,CFront.size()) 
 	-- Free chest slot 1 for cake)
 	turtle.select(2)
-	turtle.suck()
+	FilteredPickup(1, aItem, aCount)
 	
-	-- Find cake
-	for i = 1, CFront.size() do
-		if CFront.getItemDetail(i) ~= nil then	-- skip if nil or it will break the program
-			local ID = CFront.getItemDetail(i).name
-			if ID == itmCake then
-				CFront.pushItems("front",i,1,1)	-- Any eggs to slot 1
+	-- Find and shift cake
+	for i = 1, table.maxn(aItem) do
+
+			if aItem[i] == itmCake then
+				CFront.pushItems("front",i,1,1)	-- Move cake to front
 			end
-		end
 	end
 	
 	-- Obtain cake
 	turtle.select(3)
-	turtle.suck()
+	turtle.suck(1)
 	
 	-- Return held ITEM
 	turtle.select(2)
@@ -291,7 +323,7 @@ end
 -- Place cake
 function PlaceCake()
 	turtle.select(3)
-	turtle.placeUp()	-- Place cake slot on top of turtle
+	turtle.placeUp(1)	-- Place cake slot on top of turtle
 end
 
 
@@ -299,14 +331,20 @@ end
 function MainLoop()
 	local blnReady = false -- boolean enough chest ingredients
 	local aEmpty = {} -- Empty chest spaces for sorting
+	local aItem = {};
+	local aCount= {};
 	
 	ResetScreen()
 	print("Cakes since wake: "..intCakeCount)
 	if turtle.detectUp() == false then
 		--
 		print("Checking for ingredients...")
-		while blnReady == false do
-			blnCake, blnReady, aEmpty  = ChestCheck()
+		
+		-- Loop check until enough ingredients arre confirmed
+		while blnReady == false do 
+			-- Poll chest contents
+			aItem,aCount = ScanChest(1,CFront.size())
+			blnCake, blnReady, aEmpty  = ChestCheck(aItem,aCount)
 			if blnReady == false then
 				print("Waiting for ingredients...")
 				os.sleep(10) -- Wait 10 seconds and check again
@@ -323,7 +361,8 @@ function MainLoop()
 			blnOverflow = ClearFirst4(aEmpty)
 			--
 			print("Sorting chest...")
-			SortChest(blnOverflow)
+			
+			SortChest(blnOverflow,aItem)
 			--
 			print("Pulling from Chest to Turtle...")
 			PullChest()
