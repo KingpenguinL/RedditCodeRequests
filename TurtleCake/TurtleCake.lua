@@ -1,5 +1,5 @@
 -- Author: KingpneguinL
--- Version: 1.1
+-- Version: 1.1.1
 -- Purpose: Making a cake from items in a chest in front, placing bottles in a chest underneath, placing a cake in-world above turtle.
 -- REQUIRES: FARMER'S DELIGHT
 
@@ -49,6 +49,7 @@ function TurtleClear()
 		if turtle.getItemDetail() ~= nil then
 			print("Can't clear inventory, please remove manually.")
 			os.pullEvent("turtle_inventory")
+			
 		end
 	end
 end
@@ -121,19 +122,6 @@ function ChestCheck()
 	end
 	
 	return blnCake, blnEnable, aEmpty
-end
-
-
-
--- Collapses all items to the end of front chest, where space available, to clear slots for intake
-function CompressChest()	--Takes 31 seconds for 27 slots if no slots are empty, less if empty slots
-	for i=CFront.size(),1,-1 do
-		if CFront.getItemDetail(i) ~= nil then	-- Skips empty slots
-			for j=CFront.size(),5,-1 do
-				CFront.pushItems("front",i,64,j)
-			end
-		end
-	end
 end
 
 
