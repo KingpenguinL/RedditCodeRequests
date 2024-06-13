@@ -1,3 +1,25 @@
+==Version 1.3==
+AKA the "Kludge" beta edition because I took a sledgehammer to some of the core structure of the program to redo it.
+Previous versions will be available with 'defunct' appended in case someone wanted to try and make the previous versions work correctly.
+
+[-] Removed multiple functions that involved making and passing arrays, as the previous implimentation caused the scanning of chests to create 'snapshots' of the inventory that didn't reflect the actual order of items as it sorted them.
+
+[+] Added and modified 2 'Sort' functions and 2 'Scan' functions to be more reliable and modular.
+[+] During the ingredient check portion of the script, it will now read a total of all ingredients available.
+
+[~] Modified the ClearFirst4() function to only worry about clearing the items pre-sort and made a recipricating ReturnFirst4() function to handle the returns. Along side making it pick 4 slots at a time, instead of 1 to reinforce the probability of sorting correctly.
+[~] Reworked when the script pauses between making cakes so it will now prepare a second cake in advanced. No longer will there be an awkward hang time after the cake has been consumed for another one to be prepared.
+[~] Started cleaning up terminal prints. This time it is regarding "Cake detected" as to not flood the screen.
+
+[>] Expect next time for a revamped feedback system. No longer will the terminal be a wall of text. There will be structure and there will be colors (and nifty stats hopefully).
+
+
+
+==Version 1.2.1==
+[+] Added check on recipe preceeding Bake() to make sure no last minute changes altered the recipe or inventory. Adds extra steps, but greatly preferred to a bad craft ruining multiple iterations.
+
+
+
 ==Version 1.2==
 [~] Reworked how items get pulled from the input chest, as it caused problems for certain modpacks if the stack limits aren't filtered correctly.
 [~] Reworked Chest scanning method to be in it's own function. In the process, the rest of the code is cleaner and more efficient.
@@ -6,8 +28,10 @@
 [*] Still yet to reclaim ejected items from orbit.
 
 
+
 ==Version 1.1.1==
 [-] Cut out unused functions, saving memory and tidying up the code a bit.
+
 
 
 ==Version 1.1==
@@ -17,15 +41,14 @@
 [+] Optimized order of main loop to reduce unnecessary cleaning of turtle inventory while lacking ingredients
 [+] Added check for if a cake is in the chest, places it above turtle and skips crafting process.
 
-
 --Known issues--
 [*] If there is a server side error, not allowing any block to be placed (block sync issue), it will craft a cake, fail to place it, return it to the chest and continue. I have since not had this issue repeat itself. I can no longer re-create the issue, but let it be known that if it does occur, it is not the fault of the script, and your input chest will contain every cake the turtle can make so you're not losing anything other than some time re-syncing the server. Usually resolved by breaking a block next to where the cake is meant to be.
 [*] Also likely a sync issue, but only once did it not detect the cake above it, and it continued. Upon placing a cake on it again (with a mod allowing a second layer to be added) it deteced it that time. Could not recreate.
 
-
 --TODO--
 [*] Fix bug after ~32 crafts, slot gets full and can't dump nor craft (Reported by user, but can't recreate so far.)
 [*] Fix "junk" or temporary item clearing from launching refuse into lower orbit.
+
 
 
 ==Version 1.0==
