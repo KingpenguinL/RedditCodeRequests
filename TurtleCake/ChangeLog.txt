@@ -1,3 +1,6 @@
+==Version 1.4==
+[*] Fixed a bug around a cake being preemptively placed in the input chest. Turtle would put cake in incorrect slot, causing the cake to not be placed, then trapping the turtle in an infinite loop.
+
 ==Version 1.3==
 AKA the "Kludge" beta edition because I took a sledgehammer to some of the core structure of the program to redo it.
 Previous versions will be available with 'defunct' appended in case someone wanted to try and make the previous versions work correctly.

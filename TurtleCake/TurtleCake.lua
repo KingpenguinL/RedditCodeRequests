@@ -293,7 +293,7 @@ end
 -- If cake detected in input chest, use this to take it from front chest
 function TakeCake()
 	-- Free chest slot 1 for cake)
-	turtle.select(2)
+	turtle.select(3)
 	turtle.suck()
 	
 	-- Find and shift cake
@@ -513,3 +513,11 @@ end
 --m m m /m		5 	6 	7 	8
 --s e s /s		9 	10 	11 	12
 --w w w /w		13 	14 	15 	16
+
+
+
+-- SERIOUSLY BROKEN as of v1.2--
+-- FIX: replace SortChest() with old system of going through slots, but impliment new Filter for eggs and milk slot limiting.
+-- The new 'snapshot' methodology is not compatible with a full inventory.
+
+-- FIX: if recipe is wrong, it might make it anyway. Double check that.
