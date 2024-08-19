@@ -1,3 +1,6 @@
+==Version 1.5==
+[*] Fixed another bug around a cake being preemptively placed in the input chest. Turtle would put anything that wasn't a cake in the cake slot, causing the cake to not be placed, then trapping the turtle in an infinite loop.
+
 ==Version 1.4==
 [*] Fixed a bug around a cake being preemptively placed in the input chest. Turtle would put cake in incorrect slot, causing the cake to not be placed, then trapping the turtle in an infinite loop.
 

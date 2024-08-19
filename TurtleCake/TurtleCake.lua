@@ -293,7 +293,7 @@ end
 -- If cake detected in input chest, use this to take it from front chest
 function TakeCake()
 	-- Free chest slot 1 for cake)
-	turtle.select(3)
+	turtle.select(2)
 	turtle.suck()
 	
 	-- Find and shift cake
@@ -471,6 +471,7 @@ function MainLoop()
 		Recover()
 	else
 		-- Take cake from chest
+		turtle.select(3)
 		TakeCake()
 	end
 	
